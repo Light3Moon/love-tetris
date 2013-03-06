@@ -21,9 +21,10 @@ function Game:update(t)
 	self.board:update(t)
 end
 
-local background	= love.graphics.newImage("resources/main_menu_background.png")
+local overlay	= love.graphics.newImage("resources/intro_overlay.png")
 function Game:draw()
 	self.board:draw(320-160, 0)
+	love.graphics.draw(overlay, 0, 0)
 end
 
 function Game:update(t)

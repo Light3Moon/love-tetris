@@ -5,7 +5,7 @@
 
 local Cloneable	= {}
 
--- create a class-style of a Cloneable.
+-- create a class-style clone of a Cloneable.
 -- if init is true, initialize as an instance-style clone.
 function Cloneable.clone(parent, init)
 	local instance = {}

@@ -23,14 +23,10 @@ end
 
 function IntroGameBoard:update(t)
 	total = total + t
-	if (total >= last+0.5 or last == 0 or (love.keyboard.isDown("down") and total >= last+0.25)) then
-		if #self:getPieces() < 100 then
+	if (total >= last+0.5 or last == 0 or (love.keyboard.isDown("down") and total >= last+0.1)) and #self:getPieces() < 100 then
 			self:addNewPiece(nextX*32,0)
 			last = total
 			nextX = (nextX+1 >= 10) and 0 or nextX+1
-		elseif #self:getSnappedPieces() >= 100 then
-			self:clear()
-		end
 	end
 
 	GameBoard.update(self, t)
