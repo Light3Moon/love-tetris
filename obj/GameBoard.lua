@@ -21,16 +21,16 @@ function GameBoard:update(t)
 	for i,v in pairs(self:getPieces()) do
 		if not v:isSnapped() then
 			-- check for a collision with a snapped pieces
-			local collisionWith = self:getCollision(v, t*32, t*32)
+			local collisionWith = self:collide(v, 0, t*32)
 			if collisionWith then
-				v.y = collisionWith:getY()-32
+				v.y = collisionWith:getY()-v:getHeight()
 				v:snap()
 				self:addSnappedPiece(v)
 
 			-- just drop
 			else
-				v.y = math.min(v.y + (t*self.fallSpeed), self:getHeight()-32)
-				if v.y == self:getHeight()-32 then
+				v.y = math.min(v.y + (t*self.fallSpeed), self:getHeight()-v:getHeight())
+				if v.y == self:getHeight()-v:getHeight() then
 					v:snap()
 					self:addSnappedPiece(v)
 				end
@@ -39,10 +39,18 @@ function GameBoard:update(t)
 	end
 end
 
-function GameBoard:getCollision(piece,xAccel,yAccel)
-	-- too lazy to write proper collision here
-	for i,v in pairs(self:getSnappedPieces()) do
-		if piece:getY()+piece:getHeight() > v.y and piece.x == v.x then
+function GameBoard:checkCollision(piece,piece2,xAccel,yAccel)
+	-- thanks to Toadfish for this
+	local dx = math.abs(piece:getX()+xAccel - piece2:getX())
+	local dy = math.abs(piece:getY()+yAccel - piece2:getY())
+	local width = piece:getX()+xAccel < piece2:getX() and piece:getWidth() or piece2:getWidth()
+	local height = piece:getY()+yAccel < piece2:getY() and piece:getHeight() or piece2:getHeight()
+	return (dx < width) and (dy < height)
+end
+
+function GameBoard:collide(piece,xAccel,yAccel)
+	for i,v in ipairs(self:getSnappedPieces()) do
+		if self:checkCollision(piece, v, xAccel, yAccel) then
 			return v
 		end
 	end
