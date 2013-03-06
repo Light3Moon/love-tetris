@@ -4,6 +4,6 @@
 ]]
 
 function love.conf(t)
-    t.screen.width = 800
-    t.screen.height = 600
+    t.screen.width = 640
+    t.screen.height = 320
 end

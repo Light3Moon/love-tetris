@@ -5,8 +5,9 @@
 
 local Cloneable	= {}
 
--- create a new instance of this cloneable instance.
-function Cloneable.new(parent, init)
+-- create a class-style of a Cloneable.
+-- if init is true, initialize as an instance-style clone.
+function Cloneable.clone(parent, init)
 	local instance = {}
 	setmetatable(instance, {__index=parent or Cloneable})
 
@@ -16,6 +17,11 @@ function Cloneable.new(parent, init)
 	end
 
 	return instance
+end
+
+-- shortcut for creating an instance-style clone.
+function Cloneable.new(parent)
+	return Cloneable.clone(parent, true)
 end
 
 function Cloneable:initialize()
