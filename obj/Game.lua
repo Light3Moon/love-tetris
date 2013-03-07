@@ -12,8 +12,13 @@ Game.name				= "LOVE Tetris"
 Game.version			= 0
 Game.state				= -1
 Game.board				= nil
+Game.playingBackground	= love.graphics.newImage("resources/playing_background.png")
 Game.mainMenuOverlay	= love.graphics.newImage("resources/main_menu_overlay.png")
 Game.logo				= love.graphics.newImage("resources/love_outline.png")
+
+--- game running information
+Game.currentPiece		= nil
+Game.playTime			= 0
 
 function Game:initialize()
 	self.board	= IntroGameBoard:new()
@@ -21,6 +26,7 @@ function Game:initialize()
 end
 
 function Game:draw()
+	love.graphics.draw(self.playingBackground, 0, 0)
 	self.board:draw(160, 0)
 	if self.state == GameState.MAIN_MENU then
 		self:drawMenu(160, 0)
@@ -41,6 +47,14 @@ function Game:update(t)
 	self.board:update(t)
 	if self.state == GameState.INITIAL and self.board.animate == false then
 		self.state = GameState.MAIN_MENU
+
+	elseif self.state == GameState.PLAYING then
+		self.playTime = self.playTime + t
+
+		-- spawn a piece if there is no active one
+		if self.currentPiece == nil or self.currentPiece:isSnapped() then
+			self.currentPiece = self.board:addNewPiece(32*5,0)
+		end
 	end
 end
 
@@ -51,8 +65,24 @@ function Game:keypressed(key)
 		end
 
 		if self.state == GameState.MAIN_MENU then
-			self.state	= GameState.PLAYING
-			self.board	= GameBoard:new()
+			self.state		= GameState.PLAYING
+			self.board		= GameBoard:new()
+		end
+	end
+
+	if key == "left" then
+		if self.state == GameState.PLAYING then
+			if self.currentPiece and not self.currentPiece:isSnapped() then
+				self.currentPiece.x = math.max(self.currentPiece.x - 32, 0)
+			end
+		end
+	end
+
+	if key == "right" then
+		if self.state == GameState.PLAYING then
+			if self.currentPiece and not self.currentPiece:isSnapped() then
+				self.currentPiece.x = math.min(self.currentPiece.x + 32, self.board:getWidth()-self.currentPiece:getWidth())
+			end
 		end
 	end
 end

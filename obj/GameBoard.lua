@@ -18,12 +18,6 @@ GameBoard.moveDelay		= 1
 GameBoard.moveTime		= 0
 GameBoard.moveLast		= 0
 
--- drop control
-GameBoard.drop			= true
-GameBoard.dropTime		= 0
-GameBoard.dropDelay		= 2
-GameBoard.dropLast		= 0
-
 function GameBoard:initialize()
 	self.pieces			= {}
 	self.snappedPieces	= {}
@@ -31,15 +25,6 @@ end
 
 function GameBoard:update(t)
 	self:gravity(t)
-	self:drop(t)
-end
-
-function GameBoard:drop(t)
-	self.dropTime = self.dropTime + t
-	if self.dropLast == 0 or self.dropTime > self.dropLast + self.dropDelay then
-		self:addNewPiece(5,0)
-		self.dropLast = self.dropTime
-	end
 end
 
 function GameBoard:gravity(t)
