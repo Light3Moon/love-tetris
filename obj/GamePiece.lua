@@ -15,6 +15,9 @@ GamePiece.icon		= love.graphics.newImage("resources/piece.png")
 function GamePiece:update(t)
 end
 
+function GamePiece:initialize()
+end
+
 function GamePiece:draw(x,y)
 	love.graphics.draw(self.icon, x, y)
 end

@@ -10,70 +10,44 @@ local GamePieceBig			= require("obj.GamePieceBig")
 local IntroGameBoard		= GameBoard:clone()
 IntroGameBoard.fallSpeed	= 64*10
 
--- animation stuff
-IntroGameBoard.animate		= true
-IntroGameBoard.animateTime	= 0
-IntroGameBoard.animateDelay	= 0.05
-IntroGameBoard.animateLast	= 0
-IntroGameBoard.nextX		= 0
+-- random piece drop info
+IntroGameBoard.dropTime		= 0
+IntroGameBoard.dropLast		= 0
+IntroGameBoard.dropDelay	= 0.25
+IntroGameBoard.rows			= nil
 
--- movement control
---IntroGameBoard.moveSnapTo	= false
-IntroGameBoard.moveDelay	= 0.05
+function IntroGameBoard:validRows()
+	local rows = {}
+	for i,v in ipairs(self.rows) do
+		if v < 10 then
+			table.insert(rows, i)
+		end
+	end
 
-function IntroGameBoard:initialize()
-	GameBoard.initialize(self)
-end
-
-function IntroGameBoard:draw(x,y)
-	GameBoard.draw(self, x, y)
+	return rows
 end
 
 function IntroGameBoard:update(t)
-	if self.animate then
-		self.animateTime = self.animateTime + t
-		if self.animateDelay <= 0 or self.animateTime > self.animateLast + self.animateDelay then
-			local realX = self.nextX - (math.floor(self.nextX/10) * 10)
+	self.dropTime	= self.dropTime + t
+	if self.dropLast == 0 or self.dropTime > self.dropLast + self.dropDelay then
+		local validRows = self:validRows()
+		local x = validRows[math.ceil(math.random() * #validRows)]
+		self:addNewPiece((x-1)*32, 0)
+		self.rows[x] = self.rows[x] + 1
+		self.dropLast = self.dropTime
+	end
 
-			-- skip
---[[		if self.nextX == 63 then
-				self.nextX = 65
-			elseif self.nextX == 81 then
-				self.nextX = 87
-			end
-
-			-- big pieces
-			if self.nextX == 54 or self.nextX == 72 or self.nextX == 74 or self.nextX == 76 then
-				local piece = GamePieceBig:new()
-				piece:setX(realX*32)
-				piece:setY(0)
-				self:addPiece(piece)
-				self.nextX = self.nextX+1
-			else
-				self:addNewPiece(realX*32,0)
-			end]]
-
-			self:addNewPiece(realX*32,0)
-			self.nextX = self.nextX + 1
-
-			if self.animateDelay > 0 then
-				self.animateLast = self.animateTime
-			end
-
-			-- board is full. animation done.
-			if #self:getPieces() >= 100 then
-				self.animate = false
-			end
-		end
+	-- board is full. clear it.
+	if #self:getPieces() >= 100 then
+		self:clear()
 	end
 
 	self:gravity(t)
 end
 
-function IntroGameBoard:finishAnimation()
-	while self.animate == true do
-		self:update(0.016)
-	end
+function IntroGameBoard:initialize()
+	GameBoard.initialize(self)
+	self.rows = {0,0,0,0,0,0,0,0,0,0}
 end
 
 return IntroGameBoard

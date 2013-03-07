@@ -8,15 +8,9 @@ local GamePiece			= require("obj.GamePiece")
 local GameBoard			= Cloneable.clone()
 GameBoard.width			= 320
 GameBoard.height		= 320
-GameBoard.fallSpeed		= 32 -- 32 pixels per second
+GameBoard.fallSpeed		= 32*4 -- 32*4 pixels per second
 GameBoard.pieces		= nil
 GameBoard.snappedPieces	= nil
-
--- gravity control
-GameBoard.moveSnapTo	= true
-GameBoard.moveDelay		= 1
-GameBoard.moveTime		= 0
-GameBoard.moveLast		= 0
 
 function GameBoard:initialize()
 	self.pieces			= {}
@@ -28,26 +22,22 @@ function GameBoard:update(t)
 end
 
 function GameBoard:gravity(t)
-	self.moveTime = self.moveTime + t
-	if not self.moveSnapTo or self.moveTime > self.moveLast + self.moveDelay then
-		self.moveLast = self.moveTime
-		local distance = self.moveSnapTo and 32 or t*self.fallSpeed
-		for i,v in pairs(self:getPieces()) do
-			if not v:isSnapped() then
-				-- check for a collision with a snapped pieces
-				local collisionWith = self:collide(v, 0, distance)
-				if collisionWith then
-					v.y = collisionWith:getY()-v:getHeight()
+	local distance = t*self.fallSpeed
+	for i,v in pairs(self:getPieces()) do
+		if not v:isSnapped() then
+			-- check for a collision with a snapped pieces
+			local collisionWith = self:collide(v, 0, distance)
+			if collisionWith then
+				v.y = collisionWith:getY()-v:getHeight()
+				v:snap()
+				self:addSnappedPiece(v)
+
+			-- simple fall
+			else
+				v.y = math.min(v.y + distance, self:getHeight()-v:getHeight())
+				if v.y == self:getHeight()-v:getHeight() then
 					v:snap()
 					self:addSnappedPiece(v)
-
-				-- simple fall
-				else
-					v.y = math.min(v.y + distance, self:getHeight()-v:getHeight())
-					if v.y == self:getHeight()-v:getHeight() then
-						v:snap()
-						self:addSnappedPiece(v)
-					end
 				end
 			end
 		end
@@ -112,6 +102,9 @@ end
 
 function GameBoard:addSnappedPiece(piece)
 	table.insert(self.snappedPieces, piece)
+	local sound = love.audio.newSource("resources/thud.ogg", "stream")
+	sound:setVolume(0.2)
+	sound:play()
 	return true
 end
 

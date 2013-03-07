@@ -17,12 +17,14 @@ Game.mainMenuOverlay	= love.graphics.newImage("resources/main_menu_overlay.png")
 Game.logo				= love.graphics.newImage("resources/logo.png")
 
 --- game running information
-Game.currentPiece		= nil
+Game.startTime			= 0
 Game.playTime			= 0
+Game.currentPiece		= nil
 
 function Game:initialize()
-	self.board	= IntroGameBoard:new()
-	self.state	= GameState.INITIAL
+	self.startTime	= love.timer.getMicroTime()
+	self.board		= IntroGameBoard:new()
+	self.state		= GameState.MAIN_MENU
 end
 
 function Game:draw()
@@ -34,20 +36,19 @@ function Game:draw()
 end
 
 function Game:drawMenu()
+	local r,g,b,a = love.graphics.getColor()
+	local menuAlpha = math.min((love.timer.getMicroTime()-self.startTime)*(255/2), 255)
+	love.graphics.setColor(255,255,255,menuAlpha)
 	love.graphics.draw(self.mainMenuOverlay, 0, 0)
 	love.graphics.draw(self.logo, 224, 16)
-	local r,g,b,a = love.graphics.getColor()
-	love.graphics.setColor(0, 0, 0, 255)
+	love.graphics.setColor(0, 0, 0, menuAlpha)
 	love.graphics.print("press ENTER to begin", 190, 128)
 	love.graphics.setColor(r,g,b,a)
 end
 
 function Game:update(t)
 	self.board:update(t)
-	if self.state == GameState.INITIAL and self.board.animate == false then
-		self.state = GameState.MAIN_MENU
-
-	elseif self.state == GameState.PLAYING then
+	if self.state == GameState.PLAYING then
 		self.playTime = self.playTime + t
 
 		-- spawn a piece if there is no active one
@@ -59,10 +60,6 @@ end
 
 function Game:keypressed(key)
 	if key == "return" or key == "kpenter" then
-		if self.state == GameState.INITIAL then
-			self.board:finishAnimation()
-		end
-
 		if self.state == GameState.MAIN_MENU then
 			self.state		= GameState.PLAYING
 			self.board		= GameBoard:new()
@@ -82,6 +79,14 @@ function Game:keypressed(key)
 			if self.currentPiece and not self.currentPiece:isSnapped() then
 				self.currentPiece.x = math.min(self.currentPiece.x + 32, self.board:getWidth()-self.currentPiece:getWidth())
 			end
+		end
+	end
+
+	if key == "escape" then
+		if self.state == GameState.PLAYING then
+			self.currentPiece	= nil
+			self.playTime		= 0
+			self:initialize()
 		end
 	end
 end
