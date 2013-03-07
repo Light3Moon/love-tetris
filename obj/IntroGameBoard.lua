@@ -9,7 +9,6 @@ local GamePiece				= require("obj.GamePiece")
 local GamePieceBig			= require("obj.GamePieceBig")
 local IntroGameBoard		= GameBoard:clone()
 IntroGameBoard.fallSpeed	= 64*10
-IntroGameBoard.logo			= love.graphics.newImage("resources/love_outline.png")
 
 -- animation stuff
 IntroGameBoard.animate		= true
