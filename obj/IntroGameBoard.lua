@@ -37,7 +37,7 @@ function IntroGameBoard:update(t)
 			local realX = self.nextX - (math.floor(self.nextX/10) * 10)
 
 			-- skip
-			if self.nextX == 63 then
+--[[		if self.nextX == 63 then
 				self.nextX = 65
 			elseif self.nextX == 81 then
 				self.nextX = 87
@@ -52,8 +52,9 @@ function IntroGameBoard:update(t)
 				self.nextX = self.nextX+1
 			else
 				self:addNewPiece(realX*32,0)
-			end
+			end]]
 
+			self:addNewPiece(realX*32,0)
 			self.nextX = self.nextX + 1
 
 			if self.animateDelay > 0 then
@@ -61,7 +62,7 @@ function IntroGameBoard:update(t)
 			end
 
 			-- board is full. animation done.
-			if #self:getPieces() >= 88 then
+			if #self:getPieces() >= 100 then
 				self.animate = false
 			end
 		end

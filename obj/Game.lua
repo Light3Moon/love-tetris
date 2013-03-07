@@ -14,7 +14,7 @@ Game.state				= -1
 Game.board				= nil
 Game.playingBackground	= love.graphics.newImage("resources/playing_background.png")
 Game.mainMenuOverlay	= love.graphics.newImage("resources/main_menu_overlay.png")
-Game.logo				= love.graphics.newImage("resources/love_outline.png")
+Game.logo				= love.graphics.newImage("resources/logo.png")
 
 --- game running information
 Game.currentPiece		= nil
@@ -35,11 +35,10 @@ end
 
 function Game:drawMenu()
 	love.graphics.draw(self.mainMenuOverlay, 0, 0)
-	love.graphics.draw(self.logo, 160+64, 32)
+	love.graphics.draw(self.logo, 224, 16)
 	local r,g,b,a = love.graphics.getColor()
 	love.graphics.setColor(0, 0, 0, 255)
-	local newGameX = 320-(font:getWidth("[press start to begin]")/2)
-	love.graphics.print("[press start to begin]", newGameX, 32*4)
+	love.graphics.print("press ENTER to begin", 190, 128)
 	love.graphics.setColor(r,g,b,a)
 end
 
@@ -53,7 +52,7 @@ function Game:update(t)
 
 		-- spawn a piece if there is no active one
 		if self.currentPiece == nil or self.currentPiece:isSnapped() then
-			self.currentPiece = self.board:addNewPiece(32*5,0)
+			self.currentPiece = self.board:addNewPiece(160,0)
 		end
 	end
 end
