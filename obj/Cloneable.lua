@@ -11,7 +11,8 @@ function Cloneable.clone(parent, init)
 	local instance = {}
 	setmetatable(instance, {__index=parent or Cloneable})
 
-	-- should we initialize (only in cases where we're making an active instance)
+	-- should we initialize?
+	-- (only in cases where we're making an active instance)
 	if init then
 		instance:initialize()
 	end

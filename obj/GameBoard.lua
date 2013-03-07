@@ -12,27 +12,57 @@ GameBoard.fallSpeed		= 32 -- 32 pixels per second
 GameBoard.pieces		= nil
 GameBoard.snappedPieces	= nil
 
+-- gravity control
+GameBoard.moveSnapTo	= true
+GameBoard.moveDelay		= 1
+GameBoard.moveTime		= 0
+GameBoard.moveLast		= 0
+
+-- drop control
+GameBoard.drop			= true
+GameBoard.dropTime		= 0
+GameBoard.dropDelay		= 2
+GameBoard.dropLast		= 0
+
 function GameBoard:initialize()
 	self.pieces			= {}
 	self.snappedPieces	= {}
 end
 
 function GameBoard:update(t)
-	for i,v in pairs(self:getPieces()) do
-		if not v:isSnapped() then
-			-- check for a collision with a snapped pieces
-			local collisionWith = self:collide(v, 0, t*32)
-			if collisionWith then
-				v.y = collisionWith:getY()-v:getHeight()
-				v:snap()
-				self:addSnappedPiece(v)
+	self:gravity(t)
+	self:drop(t)
+end
 
-			-- just drop
-			else
-				v.y = math.min(v.y + (t*self.fallSpeed), self:getHeight()-v:getHeight())
-				if v.y == self:getHeight()-v:getHeight() then
+function GameBoard:drop(t)
+	self.dropTime = self.dropTime + t
+	if self.dropLast == 0 or self.dropTime > self.dropLast + self.dropDelay then
+		self:addNewPiece(5,0)
+		self.dropLast = self.dropTime
+	end
+end
+
+function GameBoard:gravity(t)
+	self.moveTime = self.moveTime + t
+	if not self.moveSnapTo or self.moveTime > self.moveLast + self.moveDelay then
+		self.moveLast = self.moveTime
+		local distance = self.moveSnapTo and 32 or t*self.fallSpeed
+		for i,v in pairs(self:getPieces()) do
+			if not v:isSnapped() then
+				-- check for a collision with a snapped pieces
+				local collisionWith = self:collide(v, 0, distance)
+				if collisionWith then
+					v.y = collisionWith:getY()-v:getHeight()
 					v:snap()
 					self:addSnappedPiece(v)
+
+				-- simple fall
+				else
+					v.y = math.min(v.y + distance, self:getHeight()-v:getHeight())
+					if v.y == self:getHeight()-v:getHeight() then
+						v:snap()
+						self:addSnappedPiece(v)
+					end
 				end
 			end
 		end
