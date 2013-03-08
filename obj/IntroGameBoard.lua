@@ -8,12 +8,10 @@ local GameBoard				= require("obj.GameBoard")
 local GamePiece				= require("obj.GamePiece")
 local GamePieceBig			= require("obj.GamePieceBig")
 local IntroGameBoard		= GameBoard:clone()
-IntroGameBoard.fallSpeed	= 64*10
+IntroGameBoard.fallSpeed	= 320*2
 
 -- random piece drop info
-IntroGameBoard.dropTime		= 0
-IntroGameBoard.dropLast		= 0
-IntroGameBoard.dropDelay	= 0.25
+IntroGameBoard.lastPiece	= nil
 IntroGameBoard.rows			= nil
 
 function IntroGameBoard:validRows()
@@ -28,18 +26,17 @@ function IntroGameBoard:validRows()
 end
 
 function IntroGameBoard:update(t)
-	self.dropTime	= self.dropTime + t
-	if self.dropLast == 0 or self.dropTime > self.dropLast + self.dropDelay then
+	if (not self.lastPiece or self.lastPiece:isSnapped()) then
 		local validRows = self:validRows()
 		local x = validRows[math.ceil(math.random() * #validRows)]
-		self:addNewPiece((x-1)*32, 0)
+		self.lastPiece = self:addNewPiece((x-1)*32, 0)
 		self.rows[x] = self.rows[x] + 1
-		self.dropLast = self.dropTime
 	end
 
 	-- board is full. clear it.
 	if #self:getPieces() >= 100 then
 		self:clear()
+		self.lastPiece = nil
 	end
 
 	self:gravity(t)
@@ -48,6 +45,10 @@ end
 function IntroGameBoard:initialize()
 	GameBoard.initialize(self)
 	self.rows = {0,0,0,0,0,0,0,0,0,0}
+end
+
+function IntroGameBoard:playThud()
+	-- no thud
 end
 
 return IntroGameBoard

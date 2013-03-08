@@ -15,8 +15,12 @@ font				= love.graphics.newFont("resources/dash_pixel-7.ttf", 20)
 
 love.graphics.setFont(font)
 love.graphics.setBackgroundColor(80,0,0,255)
-love.graphics.setCaption("Love Tetris")
+love.graphics.setCaption("LOVE Tetris")
 love.graphics.setIcon(love.graphics.newImage("resources/piece.png"))
+
+drumLoop = love.audio.newSource("resources/drum_loop.ogg", "stream")
+drumLoop:setLooping(true)
+drumLoop:play()
 
 function love.draw()
 	currentGame:draw()

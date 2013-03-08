@@ -1,6 +1,6 @@
 A Tetris clone created in Love2D.
 
-[**Download Love2D Here**](http://www.love2d.org/)
+[**Download Love2D**](http://www.love2d.org/)
 
 **To run:**
 

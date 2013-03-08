@@ -8,9 +8,10 @@ local GamePiece			= require("obj.GamePiece")
 local GameBoard			= Cloneable.clone()
 GameBoard.width			= 320
 GameBoard.height		= 320
-GameBoard.fallSpeed		= 32*4 -- 32*4 pixels per second
+GameBoard.fallSpeed		= 32*6 -- 32*6 pixels per second
 GameBoard.pieces		= nil
 GameBoard.snappedPieces	= nil
+GameBoard.thud			= love.audio.newSource("resources/thud.ogg", "stream")
 
 function GameBoard:initialize()
 	self.pieces			= {}
@@ -26,7 +27,7 @@ function GameBoard:gravity(t)
 	for i,v in pairs(self:getPieces()) do
 		if not v:isSnapped() then
 			-- check for a collision with a snapped pieces
-			local collisionWith = self:collide(v, 0, distance)
+			local collisionWith = self:collidePiece(v, 0, distance)
 			if collisionWith then
 				v.y = collisionWith:getY()-v:getHeight()
 				v:snap()
@@ -44,23 +45,38 @@ function GameBoard:gravity(t)
 	end
 end
 
-function GameBoard:checkCollision(piece,piece2,xAccel,yAccel)
+function GameBoard:checkCollisionXYXY(x1,y1,w1,h1,x2,y2,w2,h2)
 	-- thanks to Toadfish for this
-	local dx = math.abs(piece:getX()+xAccel - piece2:getX())
-	local dy = math.abs(piece:getY()+yAccel - piece2:getY())
-	local width = piece:getX()+xAccel < piece2:getX() and piece:getWidth() or piece2:getWidth()
-	local height = piece:getY()+yAccel < piece2:getY() and piece:getHeight() or piece2:getHeight()
+	local dx = math.abs(x1 - x2)
+	local dy = math.abs(y1 - y2)
+	local width = x1 < x2 and w1 or w2
+	local height = y1 < y2 and h1 or h2
 	return (dx < width) and (dy < height)
 end
 
-function GameBoard:collide(piece,xAccel,yAccel)
+function GameBoard:checkCollisionPieceXY(piece,x,y,w,h)
+	return self:checkCollisionXYXY(piece:getX(), piece:getY(), piece:getWidth(), piece:getHeight(),
+									x, y, w, h)
+end
+
+function GameBoard:checkCollisionPiecePiece(piece,piece2)
+	return self:checkCollisionXYXY(piece:getX(), piece:getY(), piece:getWidth(), piece:getHeight(),
+									piece2:getX(), piece2:getY(), piece2:getWidth(), piece2:getHeight())
+end
+
+function GameBoard:collideXY(x,y,width,height,xAccel,yAccel)
 	for i,v in ipairs(self:getSnappedPieces()) do
-		if self:checkCollision(piece, v, xAccel, yAccel) then
+		if self:checkCollisionXYXY(x+xAccel, y+yAccel, width, height,
+			v:getX(), v:getY(), v:getWidth(), v:getHeight()) then
 			return v
 		end
 	end
 
 	return false
+end
+
+function GameBoard:collidePiece(piece,xAccel,yAccel)
+	return self:collideXY(piece:getX(), piece:getY(), piece:getWidth(), piece:getHeight(), xAccel, yAccel)
 end
 
 function GameBoard:draw(x,y)
@@ -102,10 +118,13 @@ end
 
 function GameBoard:addSnappedPiece(piece)
 	table.insert(self.snappedPieces, piece)
-	local sound = love.audio.newSource("resources/thud.ogg", "stream")
-	sound:setVolume(0.2)
-	sound:play()
+	self:playThud()
 	return true
+end
+
+function GameBoard:playThud()
+	self.thud:stop()
+	self.thud:play()
 end
 
 function GameBoard:removeSnappedPiece(piece)
