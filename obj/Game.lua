@@ -3,19 +3,20 @@
 		Master game object.
 ]]
 
-local Cloneable			= require("obj.Cloneable")
-local GameBoard			= require("obj.GameBoard")
-local GameState			= require("obj.GameState")
-local Game				= Cloneable.clone()
-Game.name				= "LOVE Tetris"
-Game.version			= 0
-Game.state				= -1
-Game.board				= nil
+local Cloneable				= require("obj.Cloneable")
+local GameBoard				= require("obj.GameBoard")
+local GameState				= require("obj.GameState")
+local Tetromino				= require("obj.Tetromino")
+local Game					= Cloneable.clone()
+Game.name					= "LOVE Tetris"
+Game.version				= 0
+Game.state					= -1
+Game.board					= nil
 
 -- resources
-Game.playingBackground	= love.graphics.newImage("resources/playing_background.png")
-Game.mainMenuOverlay	= love.graphics.newImage("resources/main_menu_overlay.png")
-Game.logo				= love.graphics.newImage("resources/logo.png")
+Game.playingBackground		= love.graphics.newImage("resources/playing_background.png")
+Game.mainMenuOverlay		= love.graphics.newImage("resources/main_menu_overlay.png")
+Game.logo					= love.graphics.newImage("resources/logo.png")
 
 --[[
 	This drum loop, titled "Marching Mice," is a little diddle
@@ -23,24 +24,25 @@ Game.logo				= love.graphics.newImage("resources/logo.png")
 	on freesound.org. This song and its license terms can be found here:
 	http://freesound.org/people/kantouth/sounds/104984/
 ]]
-Game.drumLoop			= love.audio.newSource("resources/drum_loop.ogg", "stream")
+Game.drumLoop				= love.audio.newSource("resources/drum_loop.ogg", "stream")
 Game.drumLoop:setLooping(true)
 
-Game.pauseLoop			= love.audio.newSource("resources/sine.ogg", "stream")
+Game.pauseLoop				= love.audio.newSource("resources/sine.ogg", "stream")
 Game.pauseLoop:setVolume(0.1)
 Game.pauseLoop:setLooping(true)
 
 --- game running information
-Game.runTime			= 0
-Game.stateTime			= 0
-Game.lastMove			= 0
-Game.moveDelay			= 0.1
-Game.lastDrop			= 0
-Game.dropDelay			= 5
-Game.fallSpeed			= 128 -- how many pixels the player piece moves per second
-Game.currentPiece		= nil
-Game.clearRowTime		= nil
-Game.clearRowDelay		= 0.5 -- 1 seconds for the animation
+Game.runTime				= 0
+Game.stateTime				= 0
+Game.lastMove				= 0
+Game.moveDelay				= 0.1
+Game.lastDrop				= 0
+Game.dropDelay				= 5
+Game.fallSpeed				= 128 -- how many pixels the player piece moves per second
+Game.fallSpeedMultiplier	= 3
+Game.currentPiece			= nil
+Game.clearRowTime			= nil
+Game.clearRowDelay			= 0.5 -- 1 seconds for the animation
 
 function Game:initialize()
 	self.board = GameBoard:new()
@@ -118,12 +120,6 @@ function Game:playUpdate(t)
 	else
 		self:drop(self:getFallSpeed()*t)
 	end
-
-	if love.keyboard.isDown("left") and self:canMoveLeft() then
-		self:moveLeft()
-	elseif love.keyboard.isDown("right") and self:canMoveRight() then
-		self:moveRight()
-	end
 end
 
 -- key press management
@@ -143,16 +139,8 @@ function Game:keypressed(key)
 			self:pause()
 		end
 
-		if key == "left" then
-			if self:canMoveLeft() then
-				self:moveLeft()
-			end
-		end
-
-		if key == "right" then
-			if self:canMoveRight() then
-				self:moveRight()
-			end
+		if key == "space" then
+			self.piece:pivotLeft()
 		end
 
 		if key == "escape" then
@@ -199,7 +187,7 @@ end
 
 function Game:getFallSpeed()
 	if love.keyboard.isDown("down") then
-		return self.fallSpeed * 2
+		return self.fallSpeed * self.fallSpeedMultiplier
 	end
 
 	return self.fallSpeed
@@ -234,46 +222,34 @@ function Game:startMainMenu()
 	self.board:clear()
 end
 
+function Game:resetLastDrop()
+	self.lastDrop = 0
+end
+
 function Game:resetLastMove()
 	self.lastMove = 0
 end
 
-function Game:canMoveLeft()
-	if self.currentPiece and not self.currentPiece:isSnapped() and (self:getStateTime() > self.lastMove + self.moveDelay or self.lastMove == 0) and not self.board:collidePiece(self.currentPiece, -32, 0) then
-		return true
-	end
-
+function Game:canMoveLeft()	
 	return false
 end
 
 function Game:canMoveRight()
-	if self.currentPiece and not self.currentPiece:isSnapped() and (self:getStateTime() > self.lastMove + self.moveDelay or self.lastMove == 0) and not self.board:collidePiece(self.currentPiece, 32, 0) then
-		return true
-	end
-
 	return false
 end
 
 function Game:canDrop()
-	if self.currentPiece and not self.currentPiece:isSnapped() and (self:getStateTime() > self.lastDrop + self.dropDelay or self.lastDrop == 0) then
-		return true
-	end
-
 	return false
 end
 
 function Game:drop(distance)
-	self.board:dropPiece(self.currentPiece, math.min(distance,32))
-	self.lastDrop = self:getStateTime()
 end
 
 function Game:moveLeft()
-	self.currentPiece.x = math.max(self.currentPiece.x - 32, 0)
 	self.lastMove = self:getStateTime()
 end
 
 function Game:moveRight()
-	self.currentPiece.x = math.min(self.currentPiece.x + 32, self.board:getWidth()-self.currentPiece:getWidth())
 	self.lastMove = self:getStateTime()
 end
 
