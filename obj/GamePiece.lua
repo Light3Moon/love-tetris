@@ -3,19 +3,16 @@
 		Represents game pieces.
 ]]
 
-local Cloneable		= require("obj.Cloneable")
-local GamePiece		= Cloneable.clone()
-GamePiece.x			= 0
-GamePiece.y			= 0
-GamePiece.width		= 32
-GamePiece.height	= 32
-GamePiece.snapped	= false
-GamePiece.icon		= love.graphics.newImage("resources/piece.png")
+local Cloneable			= require("obj.Cloneable")
+local GamePiece			= Cloneable.clone()
+GamePiece.x				= 0
+GamePiece.y				= 0
+GamePiece.width			= 32
+GamePiece.height		= 32
+GamePiece.snapped		= false
+GamePiece.icon			= love.graphics.newImage("resources/piece.png")
 
 function GamePiece:update(t)
-end
-
-function GamePiece:initialize()
 end
 
 function GamePiece:draw(x,y)

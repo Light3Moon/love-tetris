@@ -8,7 +8,6 @@ local GamePiece			= require("obj.GamePiece")
 local GameBoard			= Cloneable.clone()
 GameBoard.width			= 320
 GameBoard.height		= 320
-GameBoard.fallSpeed		= 32*6 -- 32*6 pixels per second
 GameBoard.pieces		= nil
 GameBoard.snappedPieces	= nil
 GameBoard.thud			= love.audio.newSource("resources/thud.ogg", "stream")
@@ -19,32 +18,18 @@ function GameBoard:initialize()
 end
 
 function GameBoard:update(t)
-	self:gravity(t)
-end
-
-function GameBoard:gravity(t)
-	local distance = t*self.fallSpeed
-	for i,v in pairs(self:getPieces()) do
-		if not v:isSnapped() then
-			-- check for a collision with a snapped pieces
-			local collisionWith = self:collidePiece(v, 0, distance)
-			if collisionWith then
-				v.y = collisionWith:getY()-v:getHeight()
-				v:snap()
-				self:addSnappedPiece(v)
-
-			-- simple fall
-			else
-				v.y = math.min(v.y + distance, self:getHeight()-v:getHeight())
-				if v.y == self:getHeight()-v:getHeight() then
-					v:snap()
-					self:addSnappedPiece(v)
-				end
-			end
-		end
+	for i,v in ipairs(self:getPieces()) do
+		v:update(t)
 	end
 end
 
+function GameBoard:draw(x,y)
+	for i,v in pairs(self:getPieces()) do
+		v:draw(x+v:getX(), y+v:getY())
+	end
+end
+
+-- check collision is a raw check against two two dimensional areas
 function GameBoard:checkCollisionXYXY(x1,y1,w1,h1,x2,y2,w2,h2)
 	-- thanks to Toadfish for this
 	local dx = math.abs(x1 - x2)
@@ -64,6 +49,7 @@ function GameBoard:checkCollisionPiecePiece(piece,piece2)
 									piece2:getX(), piece2:getY(), piece2:getWidth(), piece2:getHeight())
 end
 
+-- collide is a check against a two dimensional area and any snapped pieces
 function GameBoard:collideXY(x,y,width,height,xAccel,yAccel)
 	for i,v in ipairs(self:getSnappedPieces()) do
 		if self:checkCollisionXYXY(x+xAccel, y+yAccel, width, height,
@@ -79,10 +65,9 @@ function GameBoard:collidePiece(piece,xAccel,yAccel)
 	return self:collideXY(piece:getX(), piece:getY(), piece:getWidth(), piece:getHeight(), xAccel, yAccel)
 end
 
-function GameBoard:draw(x,y)
-	for i,v in pairs(self:getPieces()) do
-		v:draw(x+v:getX(), y+v:getY())
-	end
+function GameBoard:playThud()
+	self.thud:stop()
+	self.thud:play()
 end
 
 function GameBoard:getWidth()
@@ -91,6 +76,22 @@ end
 
 function GameBoard:getHeight()
 	return self.height
+end
+
+function GameBoard:dropPiece(piece,distance)
+	local collision = self:collidePiece(piece, 0, distance)
+	if collision then
+		piece:setY(collision:getY()-piece:getHeight())
+		self:snapPiece(piece)
+
+	else
+		local bottom = self:getHeight() - piece:getHeight()
+		local newY = math.min(piece:getY()+distance, bottom)
+		piece:setY(piece:getY()+distance)
+		if newY == bottom then
+			self:snapPiece(piece)
+		end
+	end
 end
 
 function GameBoard:addNewPiece(x,y)
@@ -109,6 +110,7 @@ function GameBoard:removePiece(piece)
 	for i,v in ipairs(self.pieces) do
 		if v == piece then
 			table.remove(self.pieces, i)
+			self:removeSnappedPiece(piece)
 			return true
 		end
 	end
@@ -116,15 +118,20 @@ function GameBoard:removePiece(piece)
 	return false
 end
 
-function GameBoard:addSnappedPiece(piece)
-	table.insert(self.snappedPieces, piece)
+function GameBoard:snapPiece(piece)
+	piece:snap()
+	self:addSnappedPiece(piece)
 	self:playThud()
-	return true
 end
 
-function GameBoard:playThud()
-	self.thud:stop()
-	self.thud:play()
+function GameBoard:unsnapPiece(piece)
+	piece:unsnap()
+	self:removeSnappedPiece(piece)
+end
+
+function GameBoard:addSnappedPiece(piece)
+	table.insert(self.snappedPieces, piece)
+	return true
 end
 
 function GameBoard:removeSnappedPiece(piece)
@@ -138,6 +145,17 @@ function GameBoard:removeSnappedPiece(piece)
 	return false
 end
 
+function GameBoard:getRowByY(y)
+	local row = {}
+	for i,v in ipairs(self:getSnappedPieces()) do
+		if v:getY() == y then
+			table.insert(row, v)
+		end
+	end
+
+	return row
+end
+
 function GameBoard:getPieces()
 	return self.pieces
 end
@@ -147,7 +165,8 @@ function GameBoard:getSnappedPieces()
 end
 
 function GameBoard:clear()
-	self:initialize() -- clears pieces and snapped pieces
+	self.pieces			= {}
+	self.snappedPieces	= {}
 end
 
 return GameBoard
