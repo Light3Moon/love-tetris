@@ -87,7 +87,7 @@ function GameBoard:dropPiece(piece,distance)
 	else
 		local bottom = self:getHeight() - piece:getHeight()
 		local newY = math.min(piece:getY()+distance, bottom)
-		piece:setY(piece:getY()+distance)
+		piece:setY(newY)
 		if newY == bottom then
 			self:snapPiece(piece)
 		end

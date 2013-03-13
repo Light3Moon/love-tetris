@@ -36,7 +36,7 @@ Game.stateTime			= 0
 Game.lastMove			= 0
 Game.moveDelay			= 0.1
 Game.lastDrop			= 0
-Game.dropDelay			= 0.5
+Game.dropDelay			= 5
 Game.fallSpeed			= 128 -- how many pixels the player piece moves per second
 Game.currentPiece		= nil
 Game.clearRowTime		= nil
@@ -116,46 +116,46 @@ function Game:playUpdate(t)
 
 	-- drop the piece if it's active
 	else
-		self:dropPiece(self:getFallSpeed()*t)
+		self:drop(self:getFallSpeed()*t)
 	end
 
-	if love.keyboard.isDown("left") and (self:getStateTime() > self.lastMove + self.moveDelay or self.lastMove == 0) then
+	if love.keyboard.isDown("left") and self:canMoveLeft() then
 		self:moveLeft()
-	elseif love.keyboard.isDown("right") and (self:getStateTime() > self.lastMove + self.moveDelay or self.lastMove == 0) then
+	elseif love.keyboard.isDown("right") and self:canMoveRight() then
 		self:moveRight()
 	end
 end
 
 -- key press management
 function Game:keypressed(key)
-	if key == "return" or key == "kpenter" then
-		if self.state == GameState.PAUSE then
+	if self.state == GameState.PAUSE then
+		if key == "return" or key == "kpenter" then
 			self:unpause()
-		elseif self.state == GameState.PLAYING then
-			self:pause()
-		elseif self.state == GameState.MAIN_MENU then
+		end
+
+	elseif self.state == GameState.MAIN_MENU then
+		if key == "return" or key == "kpenter" then
 			self:startPlaying()
 		end
-	end
 
-	if key == "left" then
-		if self.state == GameState.PLAYING then
+	elseif self.state == GameState.PLAYING then
+		if key == "return" or key == "kpenter" then
+			self:pause()
+		end
+
+		if key == "left" then
 			if self:canMoveLeft() then
 				self:moveLeft()
 			end
 		end
-	end
 
-	if key == "right" then
-		if self.state == GameState.PLAYING then
+		if key == "right" then
 			if self:canMoveRight() then
 				self:moveRight()
 			end
 		end
-	end
 
-	if key == "escape" then
-		if self.state == GameState.PLAYING then
+		if key == "escape" then
 			self:stopPlaying()
 			self:startMainMenu()
 		end
@@ -198,6 +198,10 @@ function Game:setState(state)
 end
 
 function Game:getFallSpeed()
+	if love.keyboard.isDown("down") then
+		return self.fallSpeed * 2
+	end
+
 	return self.fallSpeed
 end
 
@@ -235,7 +239,7 @@ function Game:resetLastMove()
 end
 
 function Game:canMoveLeft()
-	if self.currentPiece and not self.currentPiece:isSnapped() and not self.board:collidePiece(self.currentPiece, -32, 0) then
+	if self.currentPiece and not self.currentPiece:isSnapped() and (self:getStateTime() > self.lastMove + self.moveDelay or self.lastMove == 0) and not self.board:collidePiece(self.currentPiece, -32, 0) then
 		return true
 	end
 
@@ -243,15 +247,24 @@ function Game:canMoveLeft()
 end
 
 function Game:canMoveRight()
-	if self.currentPiece and not self.currentPiece:isSnapped() and not self.board:collidePiece(self.currentPiece, 32, 0) then
+	if self.currentPiece and not self.currentPiece:isSnapped() and (self:getStateTime() > self.lastMove + self.moveDelay or self.lastMove == 0) and not self.board:collidePiece(self.currentPiece, 32, 0) then
 		return true
 	end
 
 	return false
 end
 
-function Game:dropPiece(distance)
-	self.board:dropPiece(self.currentPiece, distance)
+function Game:canDrop()
+	if self.currentPiece and not self.currentPiece:isSnapped() and (self:getStateTime() > self.lastDrop + self.dropDelay or self.lastDrop == 0) then
+		return true
+	end
+
+	return false
+end
+
+function Game:drop(distance)
+	self.board:dropPiece(self.currentPiece, math.min(distance,32))
+	self.lastDrop = self:getStateTime()
 end
 
 function Game:moveLeft()
