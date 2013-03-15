@@ -66,7 +66,7 @@ function Game:draw()
 	end
 
 	-- debug output
-	self:drawDebugScreen()
+	--self:drawDebugScreen()
 end
 
 -- draws the game board
