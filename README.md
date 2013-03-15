@@ -16,4 +16,10 @@ A Tetris clone created in Love2D.
 3. ???
 4. PLAY!
 
-_I'll deploy it as a separate executable later._
+#Controls#
+**Press** LEFT and RIGHT: Moves the pieces left and right.
+**Hold** LEFT and RIGHT: Repeats movement at a moderate pace.
+
+**Hold** DOWN: increase the falling speed of the tetromino.
+
+**Press** SPACE: Pivot the tetromino to the left.
