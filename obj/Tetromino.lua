@@ -13,10 +13,17 @@ function Tetromino:initialize()
 	self.pieces = {}
 end
 
+function Tetromino:snap()
+	for i,v in ipairs(self.pieces) do
+		v:snap()
+	end
+end
+
 function Tetromino:addNewPiece(x,y)
 	local piece = GamePiece:new()
 	piece:setX(x)
 	piece:setY(y)
+	self:addPiece(piece)
 	return piece
 end
 
@@ -28,6 +35,19 @@ end
 function Tetromino:setPivot(piece)
 	self.pivot = piece
 	return piece
+end
+
+function Tetromino:setPositionRelativeTo(x,y)
+	local centerX, centerY = self:getPivot():getX(), self:getPivot():getY()
+	for i,v in ipairs(self:getPieces()) do
+		local relativeX, relativeY = v:getX()-centerX, v:getY()-centerY
+		v:setX(x+relativeX)
+		v:setY(y+relativeY)
+	end
+end
+
+function Tetromino:getPivot()
+	return self.pivot
 end
 
 function Tetromino:getPieces()
@@ -51,3 +71,5 @@ function Tetromino:pivotRight()
 		v:setY(centerY+xOffset)
 	end
 end
+
+return Tetromino
