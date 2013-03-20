@@ -11,6 +11,8 @@ local ZTetromino			= require("obj.ZTetromino")
 local LTetromino			= require("obj.LTetromino")
 local JTetromino			= require("obj.JTetromino")
 local TTetromino			= require("obj.TTetromino")
+local OTetromino			= require("obj.OTetromino")
+local ITetromino			= require("obj.ITetromino")
 local Game					= Cloneable.clone()
 Game.name					= "LOVE Tetris"
 Game.version				= 0
@@ -85,9 +87,9 @@ function Game:drawMenu()
 	local menuAlpha = math.min(self:getStateTime()*(255/2), 255)
 	love.graphics.setColor(255,255,255,menuAlpha)
 	love.graphics.draw(self.mainMenuOverlay, 0, 0)
-	love.graphics.draw(self.logo, 224, 16)
+	love.graphics.draw(self.logo, 640/2 - 192/2, 100)
 	love.graphics.setColor(0, 0, 0, menuAlpha)
-	love.graphics.print("press ENTER to begin", 190, 128)
+	love.graphics.print("press ENTER to begin", 190, 228)
 	love.graphics.setColor(r,g,b,a)
 end
 
@@ -95,8 +97,8 @@ end
 function Game:drawPauseScreen()
 	local r,g,b,a = love.graphics.getColor()
 	love.graphics.setColor(255,255,255,255)
-	love.graphics.print("PAUSED", 320-(78/2), 160-40)
-	love.graphics.print("PRESS ENTER TO CONTINUE", 320-(299/2), 160-20)
+	love.graphics.print("PAUSED", 320-(78/2), 184)
+	love.graphics.print("PRESS ENTER TO CONTINUE", 320-(299/2), 204)
 	love.graphics.setColor(r,g,b,a)
 end
 
@@ -125,20 +127,24 @@ function Game:update(t)
 	end
 end
 
-function Game:getRandomTetromino()
-	local tetrominoes = {ZTetromino,LTetromino,JTetromino,TTetromino}
-	return tetrominoes[math.ceil(math.random()*4)]
-end
-
 -- updates the game (the playing state update)
 function Game:updatePlaying(t)
 	-- spawn a piece if there is no active one
 	if self.currentTetromino == nil then
 		self:newTetromino(Game:getRandomTetromino())
 
-	-- drop the current piece otherwise
-	elseif self:canFall() then
-		self:fall()
+	-- piece control goes here
+	else
+		if self:canFall() then
+			self:fall()
+		end
+
+		if (love.keyboard.isDown("left") or love.keyboard.isDown("a")) and self:canRepeatMove() and self:canMoveLeft() then
+			self:moveLeft()
+
+		elseif (love.keyboard.isDown("right") or love.keyboard.isDown("d")) and self:canRepeatMove() and self:canMoveRight() then
+			self:moveRight()
+		end
 	end
 end
 
@@ -147,7 +153,7 @@ function Game:canFall()
 end
 
 function Game:getFallDelay()
-	if love.keyboard.isDown("down") then
+	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
 		return self.fallQuickDelay
 	end
 
@@ -218,18 +224,21 @@ function Game:fall()
 	else
 		local hitBottom = false
 		for i,v in ipairs(self.currentTetromino:getPieces()) do
-			local maxY = self.board:getHeight()-v:getHeight()
-			v:setY(math.min(v:getY()+distance, maxY))
-			if v:getY() == maxY then
+			if v:getY() == self.board:getHeight()-v:getHeight() then
 				hitBottom = true
+			end
+		end
+	
+		for i,v in ipairs(self.currentTetromino:getPieces()) do
+			if not hitBottom then
+				local maxY = self.board:getHeight()-v:getHeight()
+				v:setY(math.min(v:getY()+distance, maxY))
+			else
+				self.board:snapPiece(v)
 			end
 		end
 
 		if hitBottom then
-			for i,v in ipairs(self.currentTetromino:getPieces()) do
-				self.board:snapPiece(v)
-			end
-
 			self:newTetromino(Game:getRandomTetromino())
 		end
 	end
@@ -250,6 +259,12 @@ end
 -- updates state time timer from love.update()
 function Game:updateStateTime(t)
 	self.stateTime = self.stateTime + t
+end
+
+-- retrieves a random tetromino "class"
+function Game:getRandomTetromino()
+	local tetrominoes = {ZTetromino,LTetromino,JTetromino,TTetromino,OTetromino,ITetromino}
+	return tetrominoes[math.ceil(math.random()*6)]
 end
 
 function Game:getStartX()
@@ -346,20 +361,22 @@ function Game:keypressed(key)
 			self:pause()
 		end
 
-		if key == "left" then
+		if key == "left" or key == "a" then
 			if self:canMoveLeft() then
 				self:moveLeft()
 			end
 		end
 
-		if key == "right" then
+		if key == "right" or key == "d" then
 			if self:canMoveRight() then
 				self:moveRight()
 			end
 		end
 
 		if key == " " then
-			self.currentTetromino:pivotLeft()
+			if self.board:canPivotLeft(self.currentTetromino) then
+				self.currentTetromino:pivotLeft()
+			end
 		end
 
 		if key == "escape" then

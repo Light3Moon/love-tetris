@@ -54,22 +54,48 @@ function Tetromino:getPieces()
 	return self.pieces
 end
 
+-- gets the new X,Y location of a piece after pivoting left
+-- this is for exporting pivot logic to other functions (like checking for collision)
+function Tetromino:getPivotPieceLeft(piece)
+	local centerX, centerY = self.pivot:getX(), self.pivot:getY()
+	local xOffset, yOffset = piece:getX() - centerX, piece:getY() - centerY
+	return centerX+yOffset, centerY-xOffset
+end
+
+-- gets the new X,Y location of a piece after pivoting right
+function Tetromino:getPivotPieceRight(piece)
+	local centerX, centerY = self.pivot:getX(), self.pivot:getY()
+	local xOffset, yOffset = piece:getX() - centerX, piece:getY() - centerY
+	return centerX-yOffset, centerY+xOffset
+end
+
 function Tetromino:pivotLeft()
 	local centerX, centerY = self.pivot:getX(), self.pivot:getY()
 	for i,v in ipairs(self:getPieces()) do
-		local xOffset, yOffset = v:getX() - centerX, v:getY() - centerY
-		v:setX(centerX+yOffset)
-		v:setY(centerY-xOffset)
+		if v ~= self.pivot then
+			local newX, newY = self:getPivotPieceLeft(v)
+			v:setX(newX)
+			v:setY(newY)
+		end
 	end
+
+	local pivotX, pivotY = self:getPivotPieceLeft(self.pivot)
+	self.pivot:setX(pivotX)
+	self.pivot:setY(pivotY)
 end
 
 function Tetromino:pivotRight()
-	local centerX, centerY = self.pivot:getX(), self.pivot:getY()
 	for i,v in ipairs(self:getPieces()) do
-		local xOffset, yOffset = v:getX() - centerX, v:getY() - centerY
-		v:setX(centerX-yOffset)
-		v:setY(centerY+xOffset)
+		if v ~= self:getPivot() then
+			local newX, newY = self:getPivotPieceRight(v)
+			v:setX(newX)
+			v:setY(newY)
+		end
 	end
+
+	local pivotX, pivotY = self:getPivotPieceRight(self.pivot)
+	self.pivot:setX(pivotX)
+	self.pivot:setY(pivotY)
 end
 
 return Tetromino

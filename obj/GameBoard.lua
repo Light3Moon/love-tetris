@@ -7,7 +7,7 @@ local Cloneable			= require("obj.Cloneable")
 local GamePiece			= require("obj.GamePiece")
 local GameBoard			= Cloneable.clone()
 GameBoard.width			= 320
-GameBoard.height		= 320
+GameBoard.height		= 448
 GameBoard.pieces		= nil
 GameBoard.snappedPieces	= nil
 GameBoard.thud			= love.audio.newSource("resources/thud.ogg", "stream")
@@ -51,6 +51,8 @@ end
 
 -- collide is a check against a two dimensional area and any snapped pieces
 function GameBoard:collideXY(x,y,width,height,xAccel,yAccel)
+	xAccel = xAccel or 0
+	yAccel = yAccel or 0
 	for i,v in ipairs(self:getSnappedPieces()) do
 		if self:checkCollisionXYXY(x+xAccel, y+yAccel, width, height,
 			v:getX(), v:getY(), v:getWidth(), v:getHeight()) then
@@ -63,6 +65,34 @@ end
 
 function GameBoard:collidePiece(piece,xAccel,yAccel)
 	return self:collideXY(piece:getX(), piece:getY(), piece:getWidth(), piece:getHeight(), xAccel, yAccel)
+end
+
+function GameBoard:canPivotLeft(tetromino)
+	for i,v in ipairs(tetromino:getPieces()) do
+		local newX, newY = tetromino:getPivotPieceLeft(v)
+
+		if self:collideXY(newX,newY,v:getWidth(),v:getHeight()) or
+			newX < 0 or newX >= self:getWidth() or
+			newY >= self:getHeight() then
+			return false
+		end
+	end
+
+	return true
+end
+
+function GameBoard:canPivotRight(tetromino)
+	for i,v in ipairs(tetromino:getPieces()) do
+		local newX, newY = tetromino:getPivotPieceRight(v)
+
+		if self:collideXY(newX,newY,v:getWidth(),v:getHeight()) or
+			newX < 0 or newX >= self:getWidth() or
+			newY >= self:getHeight() then
+			return false
+		end
+	end
+
+	return true
 end
 
 function GameBoard:playThud()
