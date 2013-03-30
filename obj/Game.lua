@@ -291,9 +291,8 @@ end
 
 -- retrieves a random tetromino "class"
 function Game:getRandomTetromino()
---	local tetrominoes = {ZTetromino,LTetromino,JTetromino,TTetromino,OTetromino,ITetromino}
---	return tetrominoes[math.ceil(math.random()*6)]
-	return ITetromino
+	local tetrominoes = {ZTetromino,LTetromino,JTetromino,TTetromino,OTetromino,ITetromino}
+	return tetrominoes[math.ceil(math.random()*6)]
 end
 
 function Game:getStartX()
