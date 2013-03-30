@@ -10,11 +10,13 @@ GameBoard.width			= 320
 GameBoard.height		= 448
 GameBoard.pieces		= nil
 GameBoard.snappedPieces	= nil
+GameBoard.fullRows		= nil
 GameBoard.thud			= love.audio.newSource("resources/thud.ogg", "stream")
 
 function GameBoard:initialize()
 	self.pieces			= {}
 	self.snappedPieces	= {}
+	self.fullRows		= {}
 end
 
 function GameBoard:update(t)
@@ -161,6 +163,9 @@ end
 
 function GameBoard:addSnappedPiece(piece)
 	table.insert(self.snappedPieces, piece)
+	if self:rowIsFull(piece:getY()) then
+		self:flagFullRow(piece:getY())
+	end
 	return true
 end
 
@@ -184,6 +189,46 @@ function GameBoard:getRowByY(y)
 	end
 
 	return row
+end
+
+function GameBoard:rowIsFull(y)
+	local width = 0
+	for i,v in ipairs(self:getPieces()) do
+		if v:getY() == y then
+			width = width + v:getWidth()
+		end
+	end
+
+	return width >= self:getWidth()
+end
+
+function GameBoard:getFullRows()
+	return self.fullRows
+end
+
+function GameBoard:flagFullRow(y)
+	table.insert(self.fullRows, y)
+	table.sort(self.fullRows, function(a,b) if a < b then return true end return false end)
+end
+
+function GameBoard:flagEmptyRow(y)
+	for i,v in ipairs(self.fullRows) do
+		if v == y then
+			table.remove(self.fullRows, i)
+		end
+	end
+end
+
+function GameBoard:clearRow(y)
+	for i,v in ipairs(self:getRowByY(y)) do
+		self:removePiece(v)
+	end
+
+	for i,v in ipairs(self:getSnappedPieces()) do
+		if v:getY() < y then
+			v.y = v.y + 32
+		end
+	end
 end
 
 function GameBoard:getPieces()

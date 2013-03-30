@@ -3,6 +3,7 @@
 		Master game object.
 ]]
 
+require("ext.table")
 local Cloneable				= require("obj.Cloneable")
 local GameBoard				= require("obj.GameBoard")
 local GameState				= require("obj.GameState")
@@ -23,26 +24,28 @@ Game.board					= nil
 Game.playingBackground		= love.graphics.newImage("resources/playing_background.png")
 Game.mainMenuOverlay		= love.graphics.newImage("resources/main_menu_overlay.png")
 Game.logo					= love.graphics.newImage("resources/logo.png")
-
---[[
-	This drum loop, titled "Marching Mice," is a little diddle
-	by a cool cat going by the name kantouth (http://freesound.org/people/kantouth/)
-	on freesound.org. This song and its license terms can be found here:
-	http://freesound.org/people/kantouth/sounds/104984/
-]]
 Game.drumLoop				= love.audio.newSource("resources/drum_loop.ogg", "stream")
 Game.drumLoop:setLooping(true)
 
---- game running information
+-- game settings
+Game.pointsPerRow			= 725
+Game.tetrisBonus			= Game.pointsPerRow*2 -- 2 row bonus for clearing 4 rows at once
+Game.fallDelay				= 0.5
+Game.fallQuickDelay			= 0.1
+Game.moveDelay				= 0.25
+Game.pointDisplayRate		= 5 -- 5 points per point update
+
+--- game runtime information
 Game.runTime				= 0
 Game.stateTime				= 0
 Game.previousStateTime		= 0
 Game.lastMove				= 0
-Game.moveDelay				= 0.25
 Game.lastFall				= 0
-Game.fallDelay				= 0.5
-Game.fallQuickDelay			= 0.1
 Game.currentTetromino		= nil
+Game.pointsDisplay			= 0
+Game.points					= 0
+Game.pointsDisplayDelay		= 0.01
+Game.lastPointUpdate		= 0
 Game.startX					= 32*5
 Game.startY					= 32
 
@@ -67,18 +70,23 @@ function Game:draw()
 		self:drawPauseScreen()
 	end
 
+	-- draw the game info (score and timer)
+	if self.state == GameState.PAUSE or self.state == GameState.PLAYING then
+		self:drawGameInfo()
+	end
+
 	-- debug output
 	--self:drawDebugScreen()
-end
-
--- draws the game board
-function Game:drawBoard()
-	self.board:draw(160,0)
 end
 
 -- draws the background for the game
 function Game:drawBackground()
 	love.graphics.draw(self.playingBackground, 0, 0)
+end
+
+-- draws the game board
+function Game:drawBoard()
+	self.board:draw(160,0)
 end
 
 -- draws the menu
@@ -95,11 +103,21 @@ end
 
 -- draws the pause screen
 function Game:drawPauseScreen()
-	local r,g,b,a = love.graphics.getColor()
-	love.graphics.setColor(255,255,255,255)
-	love.graphics.print("PAUSED", 320-(78/2), 184)
-	love.graphics.print("PRESS ENTER TO CONTINUE", 320-(299/2), 204)
-	love.graphics.setColor(r,g,b,a)
+	if self:getStateTime() % 0.5 < 0.25 then
+		local r,g,b,a = love.graphics.getColor()
+		love.graphics.setColor(255,255,255,255)
+		love.graphics.print("PAUSED", 320-(78/2), 184)
+		love.graphics.print("PRESS ENTER TO CONTINUE", 320-(299/2), 204)
+		love.graphics.setColor(r,g,b,a)
+	end
+end
+
+function Game:drawGameInfo()
+	love.graphics.print("SCORE:", 16, 16)
+	love.graphics.print(string.format("%d", self.pointsDisplay), 128, 16)
+
+	love.graphics.print("TIME:", 16, 32)
+	love.graphics.print(string.format("%d", math.floor(self.state == GameState.PLAYING and self:getStateTime() or self:getPreviousStateTime())), 128, 32)
 end
 
 -- draws the debug screen
@@ -114,8 +132,8 @@ end
 
 -- update the game
 function Game:update(t)
-	self:updateRunTime(t)
-	self:updateStateTime(t)
+	self.runTime = self.runTime + t
+	self.stateTime = self.stateTime + t
 
 	if self.state == GameState.PLAYING or
 		self.state == GameState.MAIN_MENU then
@@ -129,21 +147,41 @@ end
 
 -- updates the game (the playing state update)
 function Game:updatePlaying(t)
+	if self.points > self.pointsDisplay and self:getStateTime() > self.lastPointUpdate + self.pointsDisplayDelay then
+		self.pointsDisplay = math.min(self.pointsDisplay + self.pointDisplayRate, self.points)
+		self.lastPointDisplay = self:getStateTime()
+	end
+
 	-- spawn a piece if there is no active one
 	if self.currentTetromino == nil then
 		self:newTetromino(Game:getRandomTetromino())
 
 	-- piece control goes here
 	else
-		if self:canFall() then
-			self:fall()
-		end
-
 		if (love.keyboard.isDown("left") or love.keyboard.isDown("a")) and self:canRepeatMove() and self:canMoveLeft() then
 			self:moveLeft()
 
 		elseif (love.keyboard.isDown("right") or love.keyboard.isDown("d")) and self:canRepeatMove() and self:canMoveRight() then
 			self:moveRight()
+		end
+
+		-- clear rows, get points
+		if #self.board:getFullRows() > 0 then
+			local fullRows = self.board:getFullRows()
+			local clearRows = #fullRows
+			for i,v in table.safeIPairs(fullRows) do
+				self.board:clearRow(v)
+				self.board:flagEmptyRow(v)
+			end
+
+			self:addPoints(clearRows*self.pointsPerRow)
+			if clearRows >= 4 then
+				self:addPoints(self.tetrisBonus)
+			end
+		end
+
+		if self:canFall() then
+			self:fall()
 		end
 	end
 end
@@ -251,20 +289,11 @@ function Game:updateBoard()
 	self.board:update()
 end
 
--- updates run time timer from love.update()
-function Game:updateRunTime(t)
-	self.runTime = self.runTime + t
-end
-
--- updates state time timer from love.update()
-function Game:updateStateTime(t)
-	self.stateTime = self.stateTime + t
-end
-
 -- retrieves a random tetromino "class"
 function Game:getRandomTetromino()
-	local tetrominoes = {ZTetromino,LTetromino,JTetromino,TTetromino,OTetromino,ITetromino}
-	return tetrominoes[math.ceil(math.random()*6)]
+--	local tetrominoes = {ZTetromino,LTetromino,JTetromino,TTetromino,OTetromino,ITetromino}
+--	return tetrominoes[math.ceil(math.random()*6)]
+	return ITetromino
 end
 
 function Game:getStartX()
@@ -295,6 +324,10 @@ function Game:getState()
 	return self.state
 end
 
+function Game:addPoints(amount)
+	self.points = self.points + amount
+end
+
 -- change the current state
 function Game:setState(state)
 	self.state = state
@@ -312,6 +345,9 @@ function Game:stopPlaying()
 	self.currentTetromino	= nil
 	self.lastMove			= 0
 	self.lastFall			= 0
+	self.lastPointUpdate	= 0
+	self.points				= 0
+	self.pointsDisplay		= 0
 	self.board:clear()
 end
 
@@ -325,7 +361,6 @@ function Game:unpause()
 	self:setState(GameState.PLAYING)
 	self.stateTime = playTime
 	self.drumLoop:setVolume(1)
-	self.__playTime = nil
 end
 
 function Game:startMainMenu()
