@@ -24,8 +24,9 @@ Game.board					= nil
 Game.playingBackground		= love.graphics.newImage("resources/playing_background.png")
 Game.mainMenuOverlay		= love.graphics.newImage("resources/main_menu_overlay.png")
 Game.logo					= love.graphics.newImage("resources/logo.png")
-Game.drumLoop				= love.audio.newSource("resources/drum_loop.ogg", "stream")
+Game.drumLoop				= love.audio.newSource("resources/drum_loop.ogg", "static")
 Game.drumLoop:setLooping(true)
+Game.clearSound				= love.audio.newSource("resources/coins.ogg", "static")
 
 -- game settings
 Game.pointsPerRow			= 725
@@ -34,6 +35,8 @@ Game.fallDelay				= 0.5
 Game.fallQuickDelay			= 0.1
 Game.moveDelay				= 0.25
 Game.pointDisplayRate		= 5 -- 5 points per point update
+Game.startX					= 32*5
+Game.startY					= 32
 
 --- game runtime information
 Game.runTime				= 0
@@ -46,8 +49,7 @@ Game.pointsDisplay			= 0
 Game.points					= 0
 Game.pointsDisplayDelay		= 0.01
 Game.lastPointUpdate		= 0
-Game.startX					= 32*5
-Game.startY					= 32
+Game.lines					= 0
 
 function Game:initialize()
 	self.board = GameBoard:new()
@@ -113,11 +115,20 @@ function Game:drawPauseScreen()
 end
 
 function Game:drawGameInfo()
+	local font = love.graphics.getFont()
+	local r,g,b,a = love.graphics.getColor()
+	love.graphics.setFont(scoreFont)
+	love.graphics.setColor(255,255,0,255)
 	love.graphics.print("SCORE:", 16, 16)
-	love.graphics.print(string.format("%d", self.pointsDisplay), 128, 16)
+	love.graphics.print(string.format("%d", self.pointsDisplay), 80, 16)
 
-	love.graphics.print("TIME:", 16, 32)
-	love.graphics.print(string.format("%d", math.floor(self.state == GameState.PLAYING and self:getStateTime() or self:getPreviousStateTime())), 128, 32)
+	love.graphics.print("LINES:", 16, 32)
+	love.graphics.print(string.format("%d", self.lines), 80, 32)
+
+	love.graphics.print("TIME:", 16, 64)
+	love.graphics.print(string.format("%d", self.state == GameState.PLAYING and self:getStateTime() or self:getPreviousStateTime()), 80, 64)
+	love.graphics.setFont(font)
+	love.graphics.setColor(r,g,b,a)
 end
 
 -- draws the debug screen
@@ -153,8 +164,12 @@ function Game:updatePlaying(t)
 	end
 
 	-- spawn a piece if there is no active one
-	if self.currentTetromino == nil then
-		self:newTetromino(Game:getRandomTetromino())
+	if self.currentTetromino == nil or self.currentTetromino:isSnapped() then
+		local tetromino = Game:getRandomTetromino():new()
+		if not self:playWithTetromino(tetromino) then -- can't place tetromino? end the game
+			self:stopPlaying()
+			self:startMainMenu()
+		end
 
 	-- piece control goes here
 	else
@@ -169,6 +184,7 @@ function Game:updatePlaying(t)
 		if #self.board:getFullRows() > 0 then
 			local fullRows = self.board:getFullRows()
 			local clearRows = #fullRows
+			self.lines = self.lines + clearRows
 			for i,v in table.safeIPairs(fullRows) do
 				self.board:clearRow(v)
 				self.board:flagEmptyRow(v)
@@ -178,6 +194,8 @@ function Game:updatePlaying(t)
 			if clearRows >= 4 then
 				self:addPoints(self.tetrisBonus)
 			end
+
+			self.clearSound:play()
 		end
 
 		if self:canFall() then
@@ -254,10 +272,9 @@ function Game:fall()
 	if collision then
 		for i,v in ipairs(self.currentTetromino:getPieces()) do
 			v:setY(v:getY()+collisionYDiff-v:getHeight())
-			self.board:snapPiece(v)
 		end
 
-		self:newTetromino(Game:getRandomTetromino())
+		self.board:snapTetromino(self.currentTetromino)
 
 	else
 		local hitBottom = false
@@ -266,18 +283,17 @@ function Game:fall()
 				hitBottom = true
 			end
 		end
-	
-		for i,v in ipairs(self.currentTetromino:getPieces()) do
-			if not hitBottom then
+
+		-- snap it
+		if hitBottom then
+			self.board:snapTetromino(self.currentTetromino)
+
+		-- drop down
+		else
+			for i,v in ipairs(self.currentTetromino:getPieces()) do
 				local maxY = self.board:getHeight()-v:getHeight()
 				v:setY(math.min(v:getY()+distance, maxY))
-			else
-				self.board:snapPiece(v)
 			end
-		end
-
-		if hitBottom then
-			self:newTetromino(Game:getRandomTetromino())
 		end
 	end
 
@@ -347,6 +363,7 @@ function Game:stopPlaying()
 	self.lastPointUpdate	= 0
 	self.points				= 0
 	self.pointsDisplay		= 0
+	self.lines				= 0
 	self.board:clear()
 end
 
@@ -366,15 +383,21 @@ function Game:startMainMenu()
 	self:setState(GameState.MAIN_MENU)
 end
 
--- construct a new piece for play
-function Game:newTetromino(style)
-	local tetromino = style:new()
+-- prepare the piece for play
+function Game:playWithTetromino(tetromino)
 	tetromino:setPositionRelativeTo(self:getStartX(), self:getStartY())
+	for i,v in ipairs(tetromino:getPieces()) do
+		if self.board:collidePiece(v) then
+			return false
+		end
+	end
+
 	for i,v in ipairs(tetromino:getPieces()) do
 		self.board:addPiece(v)
 	end
 
 	self.currentTetromino = tetromino
+	return true
 end
 
 

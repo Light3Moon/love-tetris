@@ -8,15 +8,21 @@ local GamePiece		= require("obj.GamePiece")
 local Tetromino		= Cloneable.clone()
 Tetromino.pieces	= nil
 Tetromino.pivot		= nil
+Tetromino.snapped	= false
 
 function Tetromino:initialize()
 	self.pieces = {}
 end
 
 function Tetromino:snap()
+	self.snapped = true
 	for i,v in ipairs(self.pieces) do
 		v:snap()
 	end
+end
+
+function Tetromino:isSnapped()
+	return self.snapped == true
 end
 
 function Tetromino:addNewPiece(x,y)

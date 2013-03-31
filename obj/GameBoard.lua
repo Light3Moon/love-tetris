@@ -156,6 +156,15 @@ function GameBoard:snapPiece(piece)
 	self:playThud()
 end
 
+function GameBoard:snapTetromino(tetromino)
+	tetromino:snap()
+	for i,v in ipairs(tetromino:getPieces()) do
+		self:addSnappedPiece(v)
+	end
+
+	self:playThud()
+end
+
 function GameBoard:unsnapPiece(piece)
 	piece:unsnap()
 	self:removeSnappedPiece(piece)
@@ -163,9 +172,10 @@ end
 
 function GameBoard:addSnappedPiece(piece)
 	table.insert(self.snappedPieces, piece)
-	if self:rowIsFull(piece:getY()) then
+	if self:checkRow(piece:getY()) and not self:rowIsFull(piece:getY()) then
 		self:flagFullRow(piece:getY())
 	end
+
 	return true
 end
 
@@ -191,7 +201,7 @@ function GameBoard:getRowByY(y)
 	return row
 end
 
-function GameBoard:rowIsFull(y)
+function GameBoard:checkRow(y)
 	local width = 0
 	for i,v in ipairs(self:getPieces()) do
 		if v:getY() == y then
@@ -200,6 +210,14 @@ function GameBoard:rowIsFull(y)
 	end
 
 	return width >= self:getWidth()
+end
+
+function GameBoard:rowIsFull(y)
+	for i,v in ipairs(self.fullRows) do
+		if v == y then
+			return true
+		end
+	end
 end
 
 function GameBoard:getFullRows()

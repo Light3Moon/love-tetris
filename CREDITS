@@ -1,17 +1,23 @@
 --[[
-	drum_loop.ogg
-	This song and its license terms can be found here:
-	http://freesound.org/people/kantouth/sounds/104984/
+	Fonts:
+		dash_pixel-7.ttf
+		Dash Pixel 7 font by Style7 (http://www.styleseven.com/)
+		This font is freeware! I think that means I can use it!
 
-	dash_pixel-7.ttf
-	Dash Pixel 7 font by Style7 (http://www.styleseven.com/)
-	This font is freeware! I think that means I can use it!
+		Square.ttf
+		Squarefont font by Bou Fonts (ahhahaha).
+		http://www.dafont.com/squarefont.font
 
-	thud.ogg
-	This effect and its license terms can be found here:
-	http://www.freesound.org/people/farbin/sounds/36791/
+	Audio:
+		drum_loop.ogg
+		This song and its license terms can be found here:
+		http://freesound.org/people/kantouth/sounds/104984/
 
-	heart_rate_monitor.ogg
-	You can find this effect and its terms here:
-	http://www.freesound.org/people/Hupguy/sounds/138275/
+		thud.ogg
+		This effect and its license terms can be found here:
+		http://www.freesound.org/people/farbin/sounds/36791/
+
+		coins.ogg
+		This effect and its license terms can be found here:
+		http://freesound.org/people/D%20W/sounds/140382/
 ]]
